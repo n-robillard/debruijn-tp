@@ -20,6 +20,8 @@ import networkx as nx
 import matplotlib
 from operator import itemgetter
 import random
+
+from networkx.algorithms.shortest_paths import weighted
 random.seed(9001)
 from random import randint
 import statistics
@@ -68,19 +70,36 @@ def get_arguments():
 
 
 def read_fastq(fastq_file):
-    pass
+    with open(fastq_file, 'r') as fastq:
+        lines = fastq.readlines()
+        for i in range(len(lines)):
+            if lines[i].startswith("@"):
+                yield lines[i+1][:-1]
+
+
 
 
 def cut_kmer(read, kmer_size):
-    pass
+    for i in range(len(read)):
+        kmer = read[i:i+kmer_size]
+        yield kmer
 
 
 def build_kmer_dict(fastq_file, kmer_size):
-    pass
-
+    kmers_dict = {}
+    for seq in read_fastq(fastq_file):
+        for kmer in cut_kmer(seq, kmer_size):
+            if kmer not in kmers_dict.keys():
+                kmers_dict[kmer]=seq.find(kmer)
+            else:
+                break
+    return kmers_dict
 
 def build_graph(kmer_dict):
-    pass
+    graph = nx.DiGraph()
+    for kmer in kmer_dict.keys():
+        graph.add_edge(kmer[:-1],kmer[1:],weight=kmer_dict[kmer])
+    return graph
 
 
 def remove_paths(graph, path_list, delete_entry_node, delete_sink_node):
