@@ -76,14 +76,10 @@ def read_fastq(fastq_file):
             if lines[i].startswith("@"):
                 yield lines[i+1][:-1]
 
-
-
-
 def cut_kmer(read, kmer_size):
     for i in range(len(read)):
         kmer = read[i:i+kmer_size]
         yield kmer
-
 
 def build_kmer_dict(fastq_file, kmer_size):
     kmers_dict = {}
@@ -100,7 +96,6 @@ def build_graph(kmer_dict):
     for kmer in kmer_dict.keys():
         graph.add_edge(kmer[:-1],kmer[1:],weight=kmer_dict[kmer])
     return graph
-
 
 def remove_paths(graph, path_list, delete_entry_node, delete_sink_node):
     pass
@@ -129,18 +124,41 @@ def solve_out_tips(graph, ending_nodes):
     pass
 
 def get_starting_nodes(graph):
-    pass
+    starting_nodes = []
+    for nodes in graph:
+        if len(list(graph.predecessors(nodes))) == 0:
+            starting_nodes.append(nodes)
+    return starting_nodes
 
 def get_sink_nodes(graph):
-    pass
+    sink_nodes = []
+    for nodes in graph:
+        if len(list(graph.successors(nodes))) == 0:
+            sink_nodes.append(nodes)
+    return sink_nodes
+
+def concat_path(path_list):
+    path_str=path_list[0]
+    for i in range(1,len(path_list)):
+        path_str += path_list[i][-1]
+    return path_str
 
 def get_contigs(graph, starting_nodes, ending_nodes):
-    pass
+    contigs = []
+    for start_node in range(len(starting_nodes)):
+        for end_node in range(len(ending_nodes)):
+            if nx.has_path(graph, starting_nodes[start_node],ending_nodes[end_node]):
+                for simple_path in nx.all_simple_paths(graph,starting_nodes[start_node],ending_nodes[end_node]):
+                    path = concat_path(simple_path)
+                    contigs.append((path,len(path)))
+    return contigs
 
 def save_contigs(contigs_list, output_file):
-    pass
-
-
+    with open(f"{output_file}","w") as fasta:
+        for contig in range(len(contigs_list)):
+            fasta.write(f">contig_{contig} len = {contigs_list[contig][1]}\n{contigs_list[contig][0]}\n")
+    return fasta
+            
 def fill(text, width=80):
     """Split text with a line return to respect fasta format"""
     return os.linesep.join(text[i:i+width] for i in range(0, len(text), width))
