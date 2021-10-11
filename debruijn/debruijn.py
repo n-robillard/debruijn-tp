@@ -27,14 +27,14 @@ import matplotlib.pyplot as plt
 
 random.seed(9001)
 
-__author__ = "Your Name"
+__author__ = "ROBILLARD Nicolas"
 __copyright__ = "Universite Paris Diderot"
-__credits__ = ["Your Name"]
+__credits__ = ["ROBILLARD Nicolas"]
 __license__ = "GPL"
 __version__ = "1.0.0"
-__maintainer__ = "Your Name"
-__email__ = "your@email.fr"
-__status__ = "Developpement"
+__maintainer__ = "ROBILLARD Nicolas"
+__email__ = "nicolas.robillard@ymail.com"
+__status__ = "alpha test"
 
 def isfile(path):
     """Check if path is an existing file.
