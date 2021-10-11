@@ -101,11 +101,11 @@ def build_graph(kmer_dict):
     return graph
 
 def remove_paths(graph, path_list, delete_entry_node, delete_sink_node):
-    if delete_entry_node == True and delete_sink_node == True:
+    if delete_entry_node is True and delete_sink_node is True:
         graph.remove_nodes_from([node for path in path_list for node in path])
-    elif delete_entry_node == True and delete_sink_node == False:
+    elif delete_entry_node is True and delete_sink_node is False:
         graph.remove_nodes_from([node for path in path_list for node in path[:-1]])
-    elif delete_entry_node == False and delete_sink_node == True:
+    elif delete_entry_node is False and delete_sink_node is True:
         graph.remove_nodes_from([node for path in path_list for node in path[1:]])
     else:
         graph.remove_nodes_from([node for path in path_list for node in path[1:-1]])
@@ -151,7 +151,7 @@ def simplify_bubbles(graph):
             for i, npre in enumerate(list_nodes):
                 for j in range(i+1,len(list_nodes)):
                     node_ancestor = nx.lowest_common_ancestor(graph, npre, list_nodes[j])
-                    if node_ancestor != None:
+                    if node_ancestor is not None:
                         bubble = True
                         break
     if bubble:
