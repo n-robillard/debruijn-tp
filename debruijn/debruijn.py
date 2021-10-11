@@ -17,7 +17,7 @@ import argparse
 import os
 import sys
 import networkx as nx
-import matplotlib
+import matplotlib.pyplot as plt
 from operator import itemgetter
 import random
 import math
@@ -63,14 +63,13 @@ def get_arguments():
     parser.add_argument('-i', dest='fastq_file', type=isfile,
                         required=True, help="Fastq file")
     parser.add_argument('-k', dest='kmer_size', type=int,
-                        default=22, help="K-mer size (default 21)")
+                        default=22, help="K-mer size (default 22)")
     parser.add_argument('-o', dest='output_file', type=str,
                         default=os.curdir + os.sep + "contigs.fasta",
                         help="Output contigs in fasta file")
     parser.add_argument('-f', dest='graphimg_file', type=str,
                         help="Save graph as image (png)")
     return parser.parse_args()
-
 
 def read_fastq(fastq_file):
     with open(fastq_file, 'r') as fastq:
@@ -159,10 +158,36 @@ def simplify_bubbles(graph):
     return graph
 
 def solve_entry_tips(graph, starting_nodes):
-    pass
+    path_list = []
+    path_lenght = []
+    weight_avg_path = []
+    for nodes in graph.nodes:
+        nodes_pred = list(graph.predecessors(nodes))
+        if len(nodes_pred) > 1:
+            for entries in starting_nodes:
+                path_list += list(nx.all_simple_paths(graph, entries, nodes))
+    if len(path_list) > 0:
+        for path in path_list:
+            path_lenght.append(len(path))
+            weight_avg_path.append(path_average_weight(graph, path))
+        graph = select_best_path(graph, path_list, path_lenght, weight_avg_path, delete_entry_node=True)
+    return graph
 
 def solve_out_tips(graph, ending_nodes):
-    pass
+    path_list = []
+    path_lenght = []
+    weight_avg_path = []
+    for nodes in graph.nodes:
+        successors = list(graph.successors(nodes))
+        if len(successors) > 1:
+            for outputs in ending_nodes:
+                path_list += list(nx.all_simple_paths(graph, nodes, outputs))
+    if len(path_list) > 0:
+        for path in path_list:
+            path_lenght.append(len(path))
+            weight_avg_path.append(path_average_weight(graph, path))
+        graph = select_best_path(graph, path_list, path_lenght, weight_avg_path, delete_sink_node=True)
+    return graph
 
 def get_starting_nodes(graph):
     starting_nodes = []
@@ -195,10 +220,10 @@ def get_contigs(graph, starting_nodes, ending_nodes):
     return contigs
 
 def save_contigs(contigs_list, output_file):
-    with open(f"{output_file}","w") as fasta:
+    with open(output_file,"w") as fasta:
         for index,contig in enumerate(contigs_list):
-            fasta.write(f">contig_{index} len = {contig[1]}\n{contig[0]}\n")
-        fill(fasta)
+            fasta.write(">contig_" + str(index) + " len=" + str(contig[1]) +
+            "\n" + fill(contig[0]) + "\n")
     return fasta
             
 def fill(text, width=80):
@@ -241,7 +266,16 @@ def main():
     """
     # Get arguments
     args = get_arguments()
-
+    kmer_dictionnary = build_kmer_dict(args.fastq_file, args.kmer_size)
+    graph = build_graph(kmer_dictionnary)
+    graph = simplify_bubbles(graph)
+    starting_nodes = get_starting_nodes(graph)
+    sink_nodes = get_sink_nodes(graph)
+    graph = solve_entry_tips(graph, starting_nodes)
+    graph = solve_out_tips(graph, sink_nodes)
+    contigs = get_contigs(graph, starting_nodes, sink_nodes)
+    save_contigs(contigs, args.output_file)
+    
     # Fonctions de dessin du graphe
     # A decommenter si vous souhaitez visualiser un petit 
     # graphe
