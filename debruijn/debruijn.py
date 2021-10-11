@@ -24,6 +24,7 @@ import math
 from networkx.algorithms.dag import ancestors
 
 from networkx.algorithms.shortest_paths import weighted
+from networkx.algorithms.shortest_paths.unweighted import predecessor
 random.seed(9001)
 from random import randint
 import statistics
@@ -118,18 +119,14 @@ def std(data):
 
 def select_best_path(graph, path_list, path_length, weight_avg_list, 
                      delete_entry_node=False, delete_sink_node=False):
-    for path in path_list:
-        if std(weight_avg_list) > 0:
-            del path_list[weight_avg_list.index(max(weight_avg_list))]
-            remove_paths(graph, path_list, delete_entry_node, delete_sink_node)
-        else:
-            if std(path_length) > 0:
-                del path_list[path_length.index(max(path_length))]
-                remove_paths(graph, path_list, delete_entry_node, delete_sink_node)
-            else:
-                index_keep = randint(0,len(path_list))
-                del path[index_keep]
-                remove_paths(graph, path_list, delete_entry_node, delete_sink_node)
+    if std(weight_avg_list) > 0:
+        index_keep = weight_avg_list.index(max(weight_avg_list))
+    elif std(weight_avg_list) ==0 and  std(path_length) > 0:
+        index_keep = path_length.index(max(path_length))
+    else:
+        index_keep = randint(0,len(path_list))
+    del path_list[index_keep]
+    remove_paths(graph, path_list, delete_entry_node, delete_sink_node)
     return graph
 
 def path_average_weight(graph, path):
@@ -147,7 +144,19 @@ def solve_bubble(graph, ancestor_node, descendant_node):
     return graph
 
 def simplify_bubbles(graph):
-    pass
+    bubble = False
+    for node in graph.nodes:
+        list_nodes = list(graph.predecessors(node))
+        if len(list_nodes) >1:
+            for i, npre in enumerate(list_nodes):
+                for j in range(i+1,len(list_nodes)):
+                    node_ancestor = nx.lowest_common_ancestor(graph, npre, list_nodes[j])
+                    if node_ancestor != None:
+                        bubble = True
+                        break
+    if bubble:
+        graph = simplify_bubbles(solve_bubble(graph, node_ancestor, node))
+    return graph
 
 def solve_entry_tips(graph, starting_nodes):
     pass
