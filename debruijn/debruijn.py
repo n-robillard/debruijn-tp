@@ -13,21 +13,17 @@
 
 """Perform assembly based on debruijn graph."""
 
+import networkx as nx
 import argparse
 import os
 import sys
-import networkx as nx
-import matplotlib.pyplot as plt
-from operator import itemgetter
-import random
+import statistics
 import math
-from networkx.algorithms.dag import ancestors
-
-from networkx.algorithms.shortest_paths import weighted
-from networkx.algorithms.shortest_paths.unweighted import predecessor
+import matplotlib.pyplot as plt
+import random
 random.seed(9001)
 from random import randint
-import statistics
+
 
 __author__ = "Your Name"
 __copyright__ = "Universite Paris Diderot"
@@ -50,7 +46,6 @@ def isfile(path):
             msg = "{0} does not exist.".format(path)
         raise argparse.ArgumentTypeError(msg)
     return path
-
 
 def get_arguments():
     """Retrieves the arguments of the program.
@@ -80,8 +75,7 @@ def read_fastq(fastq_file):
 
 def cut_kmer(read, kmer_size):
     for i in range(len(read)):
-        kmer = read[i:i+kmer_size]
-        yield kmer
+        yield read[i:i+kmer_size]
 
 def build_kmer_dict(fastq_file, kmer_size):
     kmers_dict = {}
@@ -116,7 +110,7 @@ def std(data):
     return math.sqrt(ech_mean)
 
 
-def select_best_path(graph, path_list, path_length, weight_avg_list, 
+def select_best_path(graph, path_list, path_length, weight_avg_list,
                      delete_entry_node=False, delete_sink_node=False):
     if std(weight_avg_list) > 0:
         index_keep = weight_avg_list.index(max(weight_avg_list))
@@ -145,14 +139,15 @@ def solve_bubble(graph, ancestor_node, descendant_node):
 def simplify_bubbles(graph):
     bubble = False
     for node in graph.nodes:
-        list_nodes = list(graph.predecessors(node))
-        if len(list_nodes) >1:
-            for i, npre in enumerate(list_nodes):
-                for j in range(i+1,len(list_nodes)):
-                    node_ancestor = nx.lowest_common_ancestor(graph, npre, list_nodes[j])
-                    if node_ancestor is not None:
-                        bubble = True
-                        break
+        if node in graph.nodes():
+            list_nodes = list(graph.predecessors(node))
+            if len(list_nodes) >1:
+                for i, npre in enumerate(list_nodes):
+                    for j in range(i+1,len(list_nodes)):
+                        node_ancestor = nx.lowest_common_ancestor(graph, npre, list_nodes[j])
+                        if node_ancestor is not None:
+                            bubble = True
+                            break
     if bubble:
         graph = simplify_bubbles(solve_bubble(graph, node_ancestor, node))
     return graph
@@ -220,19 +215,19 @@ def get_contigs(graph, starting_nodes, ending_nodes):
     return contigs
 
 def save_contigs(contigs_list, output_file):
-    with open(output_file,"w") as fasta:
+    with open(f"{output_file}.fasta","w") as fasta:
         for index,contig in enumerate(contigs_list):
             fasta.write(">contig_" + str(index) + " len=" + str(contig[1]) +
             "\n" + fill(contig[0]) + "\n")
     return fasta
-            
+
 def fill(text, width=80):
     """Split text with a line return to respect fasta format"""
     return os.linesep.join(text[i:i+width] for i in range(0, len(text), width))
 
 def draw_graph(graph, graphimg_file):
     """Draw the graph
-    """                                    
+    """
     fig, ax = plt.subplots()
     elarge = [(u, v) for (u, v, d) in graph.edges(data=True) if d['weight'] > 3]
     #print(elarge)
@@ -243,7 +238,7 @@ def draw_graph(graph, graphimg_file):
     pos = nx.random_layout(graph)
     nx.draw_networkx_nodes(graph, pos, node_size=6)
     nx.draw_networkx_edges(graph, pos, edgelist=elarge, width=6)
-    nx.draw_networkx_edges(graph, pos, edgelist=esmall, width=6, alpha=0.5, 
+    nx.draw_networkx_edges(graph, pos, edgelist=esmall, width=6, alpha=0.5,
                            edge_color='b', style='dashed')
     #nx.draw_networkx(graph, pos, node_size=10, with_labels=False)
     # save image
@@ -254,7 +249,7 @@ def save_graph(graph, graph_file):
     """Save the graph with pickle
     """
     with open(graph_file, "wt") as save:
-            pickle.dump(graph, save)
+        pickle.dump(graph, save)
 
 
 #==============================================================
@@ -275,9 +270,8 @@ def main():
     graph = solve_out_tips(graph, sink_nodes)
     contigs = get_contigs(graph, starting_nodes, sink_nodes)
     save_contigs(contigs, args.output_file)
-    
     # Fonctions de dessin du graphe
-    # A decommenter si vous souhaitez visualiser un petit 
+    # A decommenter si vous souhaitez visualiser un petit
     # graphe
     # Plot the graph
     # if args.graphimg_file:
